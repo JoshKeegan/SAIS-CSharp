@@ -549,6 +549,44 @@ namespace SuffixArray
       if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
       return sais_main(new ByteArray(T, 0), SA, 0, n, 256, false);
     }
+    /* 4-bits per digit */
+    /// <summary>
+    /// Constructs the suffix array of a given string in linear time.
+    /// </summary>
+    /// <param name="T">input string</param>
+    /// <param name="SA">output suffix array</param>
+    /// <param name="n">length of the given string</param>
+    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
+    public static
+    int
+    sufsort(Stream T, int[] SA, int n)
+    {
+      if((T == null) || (SA == null) ||
+        (SA.Length < n))
+      {
+        return -1;
+      }
+
+      //Twice as long as the length in bytes (4 bits per character)
+      int len = (int)T.Length * 2;
+
+      //Check if the last item in the stream is empty
+      T.Position = T.Length - 1;
+      int b = T.ReadByte();
+      int right = b & 15; // mask 0000 1111
+
+      if(right == 15)
+      {
+        len--;
+      }
+
+      if(len < n)
+      {
+        return -1;
+      }
+
+      return sais_main(new FourBitDigitStreamArray(T, 0), SA, 0, n, 10, false); //k => 10, not the maximum of this datatype but the only reasonable reason to use it (that it's designed for) is for digits
+    }
     /* char */
     /// <summary>
     /// Constructs the suffix array of a given string in linear time.
