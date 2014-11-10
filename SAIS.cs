@@ -24,6 +24,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System;
+using System.IO;
+
 namespace SuffixArray
 {
 
@@ -50,6 +53,103 @@ namespace SuffixArray
     {
       set { m_array[i + m_pos] = (byte)value; }
       get { return (int)m_array[i + m_pos]; }
+    }
+  }
+
+  internal class FourBitDigitStreamArray : BaseArray
+  {
+    private Stream m_array;
+    private int m_pos;
+    public FourBitDigitStreamArray(Stream array, int pos)
+    {
+      m_pos = pos;
+      m_array = array;
+    }
+    ~FourBitDigitStreamArray() 
+    {
+      m_array.Close();
+      m_array = null; 
+    }
+    public int this[int i]
+    {
+      get
+      {
+        if(i < 0)
+        {
+          throw new IndexOutOfRangeException();
+        }
+
+        int idx = i / 2;
+        if(idx >= m_array.Length)
+        {
+          throw new IndexOutOfRangeException();
+        }
+
+        m_array.Position = idx;
+        int b = m_array.ReadByte();
+
+        //If left half of byte
+        if(i % 2 == 0)
+        {
+          b = b >> 4;
+        }
+        else //Otherwise right half
+        {
+          b = b & 15; // mask 0000 1111
+ 
+          //if the original data had an odd number of entries, then it will end half way through a byte. Second half will be 1111 (15). So if this byte is 00001111 then EOS
+          if(b == 15)
+          {
+            throw new IndexOutOfRangeException();
+          }
+        }
+        return b;
+      }
+      set
+      {
+        if(i > 15 || i < 0) //1111 (4-bit max val), or -ve
+        {
+          throw new OverflowException();
+        }
+
+        if(i < 0)
+        {
+          throw new IndexOutOfRangeException();
+        }
+
+        int idx = i / 2;
+        if(idx >= m_array.Length)
+        {
+          throw new IndexOutOfRangeException();
+        }
+
+        m_array.Position = idx;
+        int b = m_array.ReadByte();
+
+        //If replacing left half of byte
+        if(i % 2 == 0)
+        {
+          int right = b & 15; // mask 0000 1111
+          int left = i << 4;
+
+          b = left | right;
+        }
+        else //Otherwise replacing right half
+        {
+          //if the original data had an odd number of entries, then it will end half way through a byte. Second half will be 1111 (15). So if this byte is 00001111 then EOS
+          if(b == 15)
+          {
+            throw new IndexOutOfRangeException();
+          }
+
+          int left = b & 240; // mask 1111 0000
+
+          b = left | i;
+        }
+
+        m_array.Position = idx;
+        m_array.WriteByte((byte)b);
+      }
     }
   }
 
