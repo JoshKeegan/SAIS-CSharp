@@ -67,7 +67,7 @@ namespace SuffixArray
     }
     ~FourBitDigitStreamArray() 
     {
-      m_array.Close();
+      //m_array.Close();
       m_array = null; 
     }
     public int this[int i]
