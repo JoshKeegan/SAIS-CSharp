@@ -107,7 +107,7 @@ namespace SuffixArray
       }
       set
       {
-        if(i > 15 || i < 0) //1111 (4-bit max val), or -ve
+        if(value > 15 || value < 0) //1111 (4-bit max val), or -ve
         {
           throw new OverflowException();
         }
@@ -130,7 +130,7 @@ namespace SuffixArray
         if(i % 2 == 0)
         {
           int right = b & 15; // mask 0000 1111
-          int left = i << 4;
+          int left = value << 4;
 
           b = left | right;
         }
@@ -144,7 +144,7 @@ namespace SuffixArray
 
           int left = b & 240; // mask 1111 0000
 
-          b = left | i;
+          b = left | value;
         }
 
         m_array.Position = idx;
