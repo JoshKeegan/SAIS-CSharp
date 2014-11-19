@@ -2,14 +2,17 @@
 SAIS-CSharp
 ----------------------
 
-This archive contains the C# source code of an implementation of
+This repository contains the C# source code of an implementation of
 the IS based linear suffix array construction algorithm
 described in the paper:
 
 Ge Nong, Sen Zhang and Wai Hong Chan
 Two Efficient Algorithms for Linear Suffix Array Construction
 2008
-http://www.cs.sysu.edu.cn/nong/index.files/Two%20Efficient%20Algorithms%20for%20Linear%20Suffix%20Array%20Construction.pdf
+IEEE Xplore: http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=5582081
+Hong Kong Institute of Education: http://libir1.ied.edu.hk/pubdata/ir/link/pub/TC-2009-04-0165-Final.pdf
 
 
 Yuta Mori <yuta.256@gmail.com>
+
+Implemented an array of 4 bit unsigned integers (with one reserved value) for use with the PiSearch project (https://github.com/JoshKeegan/PiSearch) by Josh Keegan, 2014
