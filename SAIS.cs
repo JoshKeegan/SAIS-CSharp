@@ -27,6 +27,8 @@
 using System;
 using System.IO;
 
+using StringSearch.Collections;
+
 namespace SuffixArray
 {
 
