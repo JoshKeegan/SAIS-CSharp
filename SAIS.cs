@@ -58,99 +58,28 @@ namespace SuffixArray
     }
   }
 
-  internal class FourBitDigitStreamArray : BaseArray
+  internal class FourBitDigitStreamArray: BaseArray
   {
-    private Stream m_array;
-    private int m_pos;
-    public FourBitDigitStreamArray(Stream array, int pos)
+    private FourBitDigitBigArray m_array;
+    private long m_pos;
+
+    public FourBitDigitStreamArray(FourBitDigitBigArray array, long pos)
     {
-      m_pos = pos;
       m_array = array;
+      m_pos = pos;
     }
-    ~FourBitDigitStreamArray() 
-    {
-      //m_array.Close();
-      m_array = null; 
-    }
+
+    ~FourBitDigitStreamArray() { m_array = null; }
+
     public int this[int i]
     {
       get
       {
-        if(i < 0)
-        {
-          throw new IndexOutOfRangeException();
-        }
-
-        int idx = i / 2;
-        if(idx >= m_array.Length)
-        {
-          throw new IndexOutOfRangeException();
-        }
-
-        m_array.Position = idx;
-        int b = m_array.ReadByte();
-
-        //If left half of byte
-        if(i % 2 == 0)
-        {
-          b = b >> 4;
-        }
-        else //Otherwise right half
-        {
-          b = b & 15; // mask 0000 1111
- 
-          //if the original data had an odd number of entries, then it will end half way through a byte. Second half will be 1111 (15). So if this byte is 00001111 then EOS
-          if(b == 15)
-          {
-            throw new IndexOutOfRangeException();
-          }
-        }
-        return b;
+        return (int)m_array[i + m_pos];
       }
       set
       {
-        if(value > 15 || value < 0) //1111 (4-bit max val), or -ve
-        {
-          throw new OverflowException();
-        }
-
-        if(i < 0)
-        {
-          throw new IndexOutOfRangeException();
-        }
-
-        int idx = i / 2;
-        if(idx >= m_array.Length)
-        {
-          throw new IndexOutOfRangeException();
-        }
-
-        m_array.Position = idx;
-        int b = m_array.ReadByte();
-
-        //If replacing left half of byte
-        if(i % 2 == 0)
-        {
-          int right = b & 15; // mask 0000 1111
-          int left = value << 4;
-
-          b = left | right;
-        }
-        else //Otherwise replacing right half
-        {
-          //if the original data had an odd number of entries, then it will end half way through a byte. Second half will be 1111 (15). So if this byte is 00001111 then EOS
-          if(b == 15)
-          {
-            throw new IndexOutOfRangeException();
-          }
-
-          int left = b & 240; // mask 1111 0000
-
-          b = left | value;
-        }
-
-        m_array.Position = idx;
-        m_array.WriteByte((byte)b);
+        m_array[i + m_pos] = (byte)value;
       }
     }
   }
@@ -561,28 +490,10 @@ namespace SuffixArray
     /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
     public static
     int
-    sufsort(Stream T, int[] SA, int n)
+    sufsort(FourBitDigitBigArray T, int[] SA, int n)
     {
       if((T == null) || (SA == null) ||
-        (SA.Length < n))
-      {
-        return -1;
-      }
-
-      //Twice as long as the length in bytes (4 bits per character)
-      int len = (int)T.Length * 2;
-
-      //Check if the last item in the stream is empty
-      T.Position = T.Length - 1;
-      int b = T.ReadByte();
-      int right = b & 15; // mask 0000 1111
-
-      if(right == 15)
-      {
-        len--;
-      }
-
-      if(len < n)
+        (SA.Length < n) || (T.Length < n))
       {
         return -1;
       }
