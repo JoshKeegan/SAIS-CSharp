@@ -34,27 +34,10 @@ namespace SuffixArray
 
   internal interface BaseArray
   {
-    int this[int i]
+    long this[long i]
     {
       set;
       get;
-    }
-  }
-
-  internal class ByteArray : BaseArray
-  {
-    private byte[] m_array;
-    private int m_pos;
-    public ByteArray(byte[] array, int pos)
-    {
-      m_pos = pos;
-      m_array = array;
-    }
-    ~ByteArray() { m_array = null; }
-    public int this[int i]
-    {
-      set { m_array[i + m_pos] = (byte)value; }
-      get { return (int)m_array[i + m_pos]; }
     }
   }
 
@@ -71,11 +54,11 @@ namespace SuffixArray
 
     ~FourBitDigitStreamArray() { m_array = null; }
 
-    public int this[int i]
+    public long this[long i]
     {
       get
       {
-        return (int)m_array[i + m_pos];
+        return (long)m_array[i + m_pos];
       }
       set
       {
@@ -84,54 +67,36 @@ namespace SuffixArray
     }
   }
 
-  internal class CharArray : BaseArray
+  internal class LongArray: BaseArray
   {
-    private char[] m_array;
-    private int m_pos;
-    public CharArray(char[] array, int pos)
-    {
-      m_pos = pos;
-      m_array = array;
-    }
-    ~CharArray() { m_array = null; }
-    public int this[int i]
-    {
-      set { m_array[i + m_pos] = (char)value; }
-      get { return (int)m_array[i + m_pos]; }
-    }
-  }
+    //Use a ulong array internally, as it will never contain -ve values
+    private MemoryEfficientBigULongArray m_array;
+    private long m_pos;
 
-  internal class IntArray : BaseArray
-  {
-    private int[] m_array;
-    private int m_pos;
-    public IntArray(int[] array, int pos)
+    public LongArray(MemoryEfficientBigULongArray array, long pos)
     {
-      m_pos = pos;
       m_array = array;
+      m_pos = pos;
     }
-    ~IntArray() { m_array = null; }
-    public int this[int i]
-    {
-      set { m_array[i + m_pos] = value; }
-      get { return m_array[i + m_pos]; }
-    }
-  }
 
-  internal class StringArray : BaseArray
-  {
-    private string m_array;
-    private int m_pos;
-    public StringArray(string array, int pos)
+    public LongArray(LongArray array, long pos)
     {
-      m_pos = pos;
-      m_array = array;
+      m_array = array.m_array;
+      m_pos = array.m_pos + pos;
     }
-    ~StringArray() { m_array = null; }
-    public int this[int i]
+
+    ~LongArray() { m_array = null; }
+
+    public long this[long i]
     {
-      set { }
-      get { return (int)m_array[i + m_pos]; }
+      get
+      {
+        return (long)m_array[i + m_pos];
+      }
+      set
+      {
+        m_array[i + m_pos] = (ulong)value;
+      }
     }
   }
 
@@ -140,21 +105,21 @@ namespace SuffixArray
   /// </summary>
   public static class SAIS
   {
-    private const int MINBUCKETSIZE = 256;
+    private const long MINBUCKETSIZE = 256;
 
     private static
     void
-    getCounts(BaseArray T, BaseArray C, int n, int k)
+    getCounts(BaseArray T, BaseArray C, long n, long k)
     {
-      int i;
+      long i;
       for (i = 0; i < k; ++i) { C[i] = 0; }
       for (i = 0; i < n; ++i) { C[T[i]] = C[T[i]] + 1; }
     }
     private static
     void
-    getBuckets(BaseArray C, BaseArray B, int k, bool end)
+    getBuckets(BaseArray C, BaseArray B, long k, bool end)
     {
-      int i, sum = 0;
+      long i, sum = 0;
       if (end != false) { for (i = 0; i < k; ++i) { sum += C[i]; B[i] = sum; } }
       else { for (i = 0; i < k; ++i) { sum += C[i]; B[i] = sum - C[i]; } }
     }
@@ -162,10 +127,10 @@ namespace SuffixArray
     /* sort all type LMS suffixes */
     private static
     void
-    LMSsort(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+    LMSsort(BaseArray T, LongArray SA, BaseArray C, BaseArray B, long n, long k)
     {
-      int b, i, j;
-      int c0, c1;
+      long b, i, j;
+      long c0, c1;
       /* compute SAl */
       if (C == B) { getCounts(T, C, n, k); }
       getBuckets(C, B, k, false); /* find starts of buckets */
@@ -202,11 +167,11 @@ namespace SuffixArray
       }
     }
     private static
-    int
-    LMSpostproc(BaseArray T, int[] SA, int n, int m)
+    long
+    LMSpostproc(BaseArray T, LongArray SA, long n, long m)
     {
-      int i, j, p, q, plen, qlen, name;
-      int c0, c1;
+      long i, j, p, q, plen, qlen, name;
+      long c0, c1;
       bool diff;
 
       /* compact all the sorted substrings into the first m items of SA
@@ -256,10 +221,10 @@ namespace SuffixArray
     /* compute SA and BWT */
     private static
     void
-    induceSA(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+    induceSA(BaseArray T, LongArray SA, BaseArray C, BaseArray B, long n, long k)
     {
-      int b, i, j;
-      int c0, c1;
+      long b, i, j;
+      long c0, c1;
       /* compute SAl */
       if (C == B) { getCounts(T, C, n, k); }
       getBuckets(C, B, k, false); /* find starts of buckets */
@@ -292,11 +257,11 @@ namespace SuffixArray
       }
     }
     private static
-    int
-    computeBWT(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+    long
+    computeBWT(BaseArray T, LongArray SA, BaseArray C, BaseArray B, long n, long k)
     {
-      int b, i, j, pidx = -1;
-      int c0, c1;
+      long b, i, j, pidx = -1;
+      long c0, c1;
       /* compute SAl */
       if (C == B) { getCounts(T, C, n, k); }
       getBuckets(C, B, k, false); /* find starts of buckets */
@@ -342,30 +307,30 @@ namespace SuffixArray
     /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
        use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
     private static
-    int
-    sais_main(BaseArray T, int[] SA, int fs, int n, int k, bool isbwt)
+    long
+    sais_main(BaseArray T, LongArray SA, long fs, long n, long k, bool isbwt)
     {
       BaseArray C, B, RA;
-      int i, j, b, m, p, q, name, pidx = 0, newfs;
-      int c0, c1;
-      uint flags = 0;
+      long i, j, b, m, p, q, name, pidx = 0, newfs;
+      long c0, c1;
+      ulong flags = 0;
 
       if (k <= MINBUCKETSIZE)
       {
-        C = new IntArray(new int[k], 0);
-        if (k <= fs) { B = new IntArray(SA, n + fs - k); flags = 1; }
-        else { B = new IntArray(new int[k], 0); flags = 3; }
+        C = new LongArray(new MemoryEfficientBigULongArray(k), 0);
+        if (k <= fs) { B = new LongArray(SA, n + fs - k); flags = 1; }
+        else { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); flags = 3; }
       }
       else if (k <= fs)
       {
-        C = new IntArray(SA, n + fs - k);
-        if (k <= (fs - k)) { B = new IntArray(SA, n + fs - k * 2); flags = 0; }
-        else if (k <= (MINBUCKETSIZE * 4)) { B = new IntArray(new int[k], 0); flags = 2; }
+        C = new LongArray(SA, n + fs - k);
+        if (k <= (fs - k)) { B = new LongArray(SA, n + fs - k * 2); flags = 0; }
+        else if (k <= (MINBUCKETSIZE * 4)) { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); flags = 2; }
         else { B = C; flags = 8; }
       }
       else
       {
-        C = B = new IntArray(new int[k], 0);
+        C = B = new LongArray(new MemoryEfficientBigULongArray(k), 0);
         flags = 4 | 8;
       }
 
@@ -415,7 +380,7 @@ namespace SuffixArray
         {
           if (SA[i] != 0) { SA[j--] = SA[i] - 1; }
         }
-        RA = new IntArray(SA, m + newfs);
+        RA = new LongArray(SA, m + newfs);
         sais_main(RA, SA, newfs, m, name, false);
         RA = null;
 
@@ -432,8 +397,8 @@ namespace SuffixArray
         }
 
         for (i = 0; i < m; ++i) { SA[i] = SA[m + SA[i]]; }
-        if ((flags & 4) != 0) { C = B = new IntArray(new int[k], 0); }
-        if ((flags & 2) != 0) { B = new IntArray(new int[k], 0); }
+        if ((flags & 4) != 0) { C = B = new LongArray(new MemoryEfficientBigULongArray(k), 0); }
+        if ((flags & 2) != 0) { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); }
       }
 
       /* stage 3: induce the result for the original problem */
@@ -463,23 +428,6 @@ namespace SuffixArray
     }
 
     /*- Suffixsorting -*/
-    /* byte */
-    /// <summary>
-    /// Constructs the suffix array of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="SA">output suffix array</param>
-    /// <param name="n">length of the given string</param>
-    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    sufsort(byte[] T, int[] SA, int n)
-    {
-      if ((T == null) || (SA == null) ||
-          (T.Length < n) || (SA.Length < n)) { return -1; }
-      if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
-      return sais_main(new ByteArray(T, 0), SA, 0, n, 256, false);
-    }
     /* 4-bits per digit */
     /// <summary>
     /// Constructs the suffix array of a given string in linear time.
@@ -489,8 +437,8 @@ namespace SuffixArray
     /// <param name="n">length of the given string</param>
     /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
     public static
-    int
-    sufsort(FourBitDigitBigArray T, int[] SA, int n)
+    long
+    sufsort(FourBitDigitBigArray T, MemoryEfficientBigULongArray SA, long n)
     {
       if((T == null) || (SA == null) ||
         (SA.Length < n) || (T.Length < n))
@@ -498,134 +446,7 @@ namespace SuffixArray
         return -1;
       }
 
-      return sais_main(new FourBitDigitStreamArray(T, 0), SA, 0, n, 10, false); //k => 10, not the maximum of this datatype but the only reasonable reason to use it (that it's designed for) is for digits
-    }
-    /* char */
-    /// <summary>
-    /// Constructs the suffix array of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="SA">output suffix array</param>
-    /// <param name="n">length of the given string</param>
-    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    sufsort(char[] T, int[] SA, int n)
-    {
-      if ((T == null) || (SA == null) ||
-          (T.Length < n) || (SA.Length < n)) { return -1; }
-      if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
-      return sais_main(new CharArray(T, 0), SA, 0, n, 65536, false);
-    }
-    /* int */
-    /// <summary>
-    /// Constructs the suffix array of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="SA">output suffix array</param>
-    /// <param name="n">length of the given string</param>
-    /// <param name="k">alphabet size</param>
-    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    sufsort(int[] T, int[] SA, int n, int k)
-    {
-      if ((T == null) || (SA == null) ||
-          (T.Length < n) || (SA.Length < n) ||
-         (k <= 0)) { return -1; }
-      if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
-      return sais_main(new IntArray(T, 0), SA, 0, n, k, false);
-    }
-    /* string */
-    /// <summary>
-    /// Constructs the suffix array of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="SA">output suffix array</param>
-    /// <param name="n">length of the given string</param>
-    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    sufsort(string T, int[] SA, int n)
-    {
-      if ((T == null) || (SA == null) ||
-          (T.Length < n) || (SA.Length < n)) { return -1; }
-      if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
-      return sais_main(new StringArray(T, 0), SA, 0, n, 65536, false);
-    }
-
-    /*- Burrows-Wheeler Transform -*/
-    /* byte */
-    /// <summary>
-    /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="U">output string</param>
-    /// <param name="A">temporary array</param>
-    /// <param name="n">length of the given string</param>
-    /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    bwt(byte[] T, byte[] U, int[] A, int n)
-    {
-      int i, pidx;
-      if ((T == null) || (U == null) || (A == null) ||
-         (T.Length < n) || (U.Length < n) || (A.Length < n)) { return -1; }
-      if (n <= 1) { if (n == 1) { U[0] = T[0]; } return n; }
-      pidx = sais_main(new ByteArray(T, 0), A, 0, n, 256, true);
-      U[0] = T[n - 1];
-      for (i = 0; i < pidx; ++i) { U[i + 1] = (byte)A[i]; }
-      for (i += 1; i < n; ++i) { U[i] = (byte)A[i]; }
-      return pidx + 1;
-    }
-    /* char */
-    /// <summary>
-    /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="U">output string</param>
-    /// <param name="A">temporary array</param>
-    /// <param name="n">length of the given string</param>
-    /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    bwt(char[] T, char[] U, int[] A, int n)
-    {
-      int i, pidx;
-      if ((T == null) || (U == null) || (A == null) ||
-         (T.Length < n) || (U.Length < n) || (A.Length < n)) { return -1; }
-      if (n <= 1) { if (n == 1) { U[0] = T[0]; } return n; }
-      pidx = sais_main(new CharArray(T, 0), A, 0, n, 65536, true);
-      U[0] = T[n - 1];
-      for (i = 0; i < pidx; ++i) { U[i + 1] = (char)A[i]; }
-      for (i += 1; i < n; ++i) { U[i] = (char)A[i]; }
-      return pidx + 1;
-    }
-    /* int */
-    /// <summary>
-    /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-    /// </summary>
-    /// <param name="T">input string</param>
-    /// <param name="U">output string</param>
-    /// <param name="A">temporary array</param>
-    /// <param name="n">length of the given string</param>
-    /// <param name="k">alphabet size</param>
-    /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-    public static
-    int
-    bwt(int[] T, int[] U, int[] A, int n, int k)
-    {
-      int i, pidx;
-      if ((T == null) || (U == null) || (A == null) ||
-         (T.Length < n) || (U.Length < n) || (A.Length < n) ||
-         (k <= 0)) { return -1; }
-      if (n <= 1) { if (n == 1) { U[0] = T[0]; } return n; }
-      pidx = sais_main(new IntArray(T, 0), A, 0, n, k, true);
-      U[0] = T[n - 1];
-      for (i = 0; i < pidx; ++i) { U[i + 1] = A[i]; }
-      for (i += 1; i < n; ++i) { U[i] = A[i]; }
-      return pidx + 1;
+      return sais_main(new FourBitDigitStreamArray(T, 0), new LongArray(SA, 0), 0, n, 10, false); //k => 10, not the maximum of this datatype but the only reasonable reason to use it (that it's designed for) is for digits
     }
   }
-
 }
