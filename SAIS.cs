@@ -70,10 +70,10 @@ namespace SuffixArray
   internal class LongArray: BaseArray
   {
     //Use a ulong array internally, as it will never contain -ve values
-    private MemoryEfficientBigULongArray m_array;
+    private BigArray<ulong> m_array;
     private long m_pos;
 
-    public LongArray(MemoryEfficientBigULongArray array, long pos)
+    public LongArray(BigArray<ulong> array, long pos)
     {
       m_array = array;
       m_pos = pos;
@@ -345,20 +345,20 @@ namespace SuffixArray
 
       if (k <= MINBUCKETSIZE)
       {
-        C = new LongArray(new MemoryEfficientBigULongArray(k), 0);
+        C = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0);
         if (k <= fs) { B = new LongArray(SA, n + fs - k); flags = 1; }
-        else { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); flags = 3; }
+        else { B = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0); flags = 3; }
       }
       else if (k <= fs)
       {
         C = new LongArray(SA, n + fs - k);
         if (k <= (fs - k)) { B = new LongArray(SA, n + fs - k * 2); flags = 0; }
-        else if (k <= (MINBUCKETSIZE * 4)) { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); flags = 2; }
+        else if (k <= (MINBUCKETSIZE * 4)) { B = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0); flags = 2; }
         else { B = C; flags = 8; }
       }
       else
       {
-        C = B = new LongArray(new MemoryEfficientBigULongArray(k), 0);
+        C = B = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0);
         flags = 4 | 8;
       }
 
@@ -425,8 +425,8 @@ namespace SuffixArray
         }
 
         for (i = 0; i < m; ++i) { SA[i] = SA[m + SA[i]]; }
-        if ((flags & 4) != 0) { C = B = new LongArray(new MemoryEfficientBigULongArray(k), 0); }
-        if ((flags & 2) != 0) { B = new LongArray(new MemoryEfficientBigULongArray(k), 0); }
+        if ((flags & 4) != 0) { C = B = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0); }
+        if ((flags & 2) != 0) { B = new LongArray(new MemoryEfficientByteAlignedBigULongArray(k), 0); }
       }
 
       /* stage 3: induce the result for the original problem */
@@ -466,7 +466,7 @@ namespace SuffixArray
     /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
     public static
     long
-    sufsort(FourBitDigitBigArray T, MemoryEfficientBigULongArray SA, long n)
+    sufsort(FourBitDigitBigArray T, BigArray<ulong> SA, long n)
     {
       if((T == null) || (SA == null) ||
         (SA.Length < n) || (T.Length < n))
@@ -487,7 +487,7 @@ namespace SuffixArray
     /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
     public static
     long
-    sufsort(string T, MemoryEfficientBigULongArray SA, int n)
+    sufsort(string T, BigArray<ulong> SA, int n)
     {
       if ((T == null) || (SA == null) ||
       (T.Length < n) || (SA.Length < n)) { return -1; }
