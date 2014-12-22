@@ -100,6 +100,34 @@ namespace SuffixArray
     }
   }
 
+  internal class StringArray : BaseArray
+  {
+    private string m_array;
+    private int m_pos;
+
+    public StringArray(string array, long pos)
+    {
+      if(pos > int.MaxValue)
+      {
+        throw new ArgumentOutOfRangeException("StringArray only supports up to int.MaxValue elements");
+      }
+
+      m_array = array;
+      m_pos = (int)pos;
+    }
+
+    ~StringArray() { m_array = null; }
+
+    public long this[long i]
+    {
+      get
+      {
+        return (long)m_array[(int)i + m_pos];
+      }
+      set {  }
+    }
+  }
+
   /// <summary>
   /// An implementation of the induced sorting based suffix array construction algorithm.
   /// </summary>
@@ -448,5 +476,24 @@ namespace SuffixArray
 
       return sais_main(new FourBitDigitStreamArray(T, 0), new LongArray(SA, 0), 0, n, 10, false); //k => 10, not the maximum of this datatype but the only reasonable reason to use it (that it's designed for) is for digits
     }
+
+    /* string */
+    /// <summary>
+    /// Constructs the suffix array of a given string in linear time.
+    /// </summary>
+    /// <param name="T">input string</param>
+    /// <param name="SA">output suffix array</param>
+    /// <param name="n">length of the given string</param>
+    /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
+    public static
+    long
+    sufsort(string T, MemoryEfficientBigULongArray SA, int n)
+    {
+      if ((T == null) || (SA == null) ||
+      (T.Length < n) || (SA.Length < n)) { return -1; }
+      if (n <= 1) { if (n == 1) { SA[0] = 0; } return 0; }
+      return sais_main(new StringArray(T, 0), new LongArray(SA, 0), 0, n, 65536, false);
+    }
+
   }
 }
